@@ -48,23 +48,37 @@
     
     self.imageCache = [NSCache new];
     
-    // Populate the image cache because calling -[PHImageManager requestImageForAsset:...]
+    // Warm the image cache because calling -[PHImageManager requestImageForAsset:...]
     // in -tableView:objectValueForTableColumn:row: causes scrolling to stutter
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0), ^{
-        PHImageRequestOptions *options = [PHImageRequestOptions new];
-        options.deliveryMode = PHImageRequestOptionsDeliveryModeFastFormat;
-        options.networkAccessAllowed = NO;
-        options.synchronous = YES;
-        
         [self.fetchResult enumerateObjectsUsingBlock:^(PHAsset *asset, NSUInteger idx, BOOL *stop) {
-            [self.imageManager requestImageForAsset:asset targetSize:CGSizeMake(60, 40)
-                                        contentMode:PHImageContentModeAspectFill options:options
-                                      resultHandler:^(NSImage *result, NSDictionary *info) {
-                                          if (result == nil) { return; }
-                 [self.imageCache setObject:result forKey:asset.localIdentifier];
-             }];
+            [self imageForAsset:asset];
         }];
     });
+}
+
+- (NSImage *)imageForAsset:(PHAsset *)asset
+{
+    __block NSImage *image = [self.imageCache objectForKey:asset.localIdentifier];
+    if (image != nil) {
+        return image;
+    }
+    
+    PHImageRequestOptions *options = [PHImageRequestOptions new];
+    options.deliveryMode = PHImageRequestOptionsDeliveryModeFastFormat;
+    options.networkAccessAllowed = NO;
+    options.synchronous = YES;
+    
+    [self.imageManager requestImageForAsset:asset targetSize:CGSizeMake(60, 40)
+                                contentMode:PHImageContentModeAspectFill options:options
+                              resultHandler:^(NSImage *result, NSDictionary *info) {
+                                  image = result; }];
+    
+    if (image != nil) {
+        [self.imageCache setObject:image forKey:asset.localIdentifier];
+    }
+    
+    return image;
 }
 
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tableView
@@ -86,26 +100,7 @@
     }
     
     if ([identifier isEqualToString:@"image"]) {
-        __block NSImage *image = [self.imageCache objectForKey:asset.localIdentifier];
-        if (image != nil) {
-            return image;
-        }
-        
-        PHImageRequestOptions *options = [PHImageRequestOptions new];
-        options.deliveryMode = PHImageRequestOptionsDeliveryModeFastFormat;
-        options.networkAccessAllowed = NO;
-        options.synchronous = YES;
-        
-        [self.imageManager requestImageForAsset:asset targetSize:CGSizeMake(60, 40)
-                                    contentMode:PHImageContentModeAspectFill options:options
-                                  resultHandler:^(NSImage *result, NSDictionary *info) {
-                                      image = result; }];
-        
-        if (image != nil) {
-            [self.imageCache setObject:image forKey:asset.localIdentifier];
-        }
-        
-        return image;
+        return [self imageForAsset:asset];
     }
     
     if ([identifier isEqualToString:@"dimensions"]) {
