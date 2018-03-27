@@ -57,10 +57,12 @@
         options.synchronous = YES;
         
         [self.fetchResult enumerateObjectsUsingBlock:^(PHAsset *asset, NSUInteger idx, BOOL *stop) {
-            [self.imageManager requestImageForAsset:asset targetSize:CGSizeMake(60, 40) contentMode:PHImageContentModeAspectFill options:options
-                                      resultHandler:^(NSImage *result, NSDictionary *info) { if (result == nil) { return; }
-                                          [self.imageCache setObject:result forKey:asset.localIdentifier];
-                                      }];
+            [self.imageManager requestImageForAsset:asset targetSize:CGSizeMake(60, 40)
+                                        contentMode:PHImageContentModeAspectFill options:options
+                                      resultHandler:^(NSImage *result, NSDictionary *info) {
+                                          if (result == nil) { return; }
+                 [self.imageCache setObject:result forKey:asset.localIdentifier];
+             }];
         }];
     });
 }
@@ -70,7 +72,7 @@
     return self.sortedAssets.count;
 }
 
-- (nullable id)tableView:(NSTableView *)tableView objectValueForTableColumn:(nullable NSTableColumn *)tableColumn row:(NSInteger)row
+- (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
 {
     PHAsset *asset = [self.sortedAssets objectAtIndex:row];
     
@@ -94,8 +96,10 @@
         options.networkAccessAllowed = NO;
         options.synchronous = YES;
         
-        [self.imageManager requestImageForAsset:asset targetSize:CGSizeMake(60, 40) contentMode:PHImageContentModeAspectFill options:options
-                                  resultHandler:^(NSImage * _Nullable result, NSDictionary * _Nullable info) { image = result; }];
+        [self.imageManager requestImageForAsset:asset targetSize:CGSizeMake(60, 40)
+                                    contentMode:PHImageContentModeAspectFill options:options
+                                  resultHandler:^(NSImage *result, NSDictionary *info) {
+                                      image = result; }];
         
         if (image != nil) {
             [self.imageCache setObject:image forKey:asset.localIdentifier];
